@@ -1,6 +1,6 @@
 import unittest
 
-from htmlnode import HTMLNode
+from htmlnode import HTMLNode, LeafNode 
 
 
 class test_html_node_creates_with_defaults(unittest.TestCase):
@@ -20,6 +20,14 @@ class test_props_to_html_with_multiple_props(unittest.TestCase):
     props_html = node.props_to_html()
     assert ' class="btn"' in props_html
     assert ' id="submit-btn"' in props_html
+
+def test_leaf_to_html_p(self):
+    node = LeafNode("p", "Hello, world!")
+    self.assertEqual(node.to_html(), "<p>Hello, world!</p>")
+
+def test_leaf_to_html_a(self):
+    node = LeafNode("a", "Click me!", {"href": "https://www.google.com"})
+    self.assertEqual(node.to_html(), '"<a href="https://www.google.com">Click me!</a>"')
 
 
 if __name__ == "__main__":
