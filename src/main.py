@@ -1,5 +1,13 @@
-from textnode import TextNode, TextType
-from htmlnode import HTMLNode, LeafNode, ParentNode
+from textnode import (
+    TextNode,           
+    TextType, 
+    split_nodes_delimiter, 
+    text_node_to_html_node)
+
+from htmlnode import (
+    HTMLNode, 
+    LeafNode, 
+    ParentNode)
 
 print('hello world')
 
@@ -29,7 +37,13 @@ def main():
         TextType.IMAGE, 
         "https://static.wikia.nocookie.net/fortnite/images/7/79/Meow_Skulls_-_Outfit_-_Fortnite.png/revision/latest?cb=20220918081949"
         )   
-    new_leaf_image = new_leaf_image.text_node_to_html_node()
+    new_leaf_image = text_node_to_html_node(new_leaf_image)
     print(new_leaf_image.to_html())
+
+    new_spliter = TextNode("This is text with a `code block` word", TextType.TEXT)
+    new_spliter2 = TextNode("`code block` is another `coder bockly`", TextType.TEXT)
+    new_spliter3 = TextNode("Bold and brash", TextType.BOLD)
+    new_nodes = split_nodes_delimiter([new_spliter, new_spliter3, new_spliter2], '`', TextType.CODE)
+    print(new_nodes)
 
 main()
