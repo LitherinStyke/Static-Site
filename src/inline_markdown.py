@@ -22,13 +22,38 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
             else:
                 nodes.append(TextNode(text_node[i], text_type))
 
-    for node in nodes:
-        print(node)
-
     return nodes
 
 def text_to_textnodes(text):
-    pass
+    new_node = TextNode(text, TextType.TEXT)
+    print(f'\n1. {new_node}\n')
+
+    bolden = split_nodes_delimiter([new_node], '**', TextType.BOLD)
+    print(f'\n2.')
+    for node in bolden:
+        print(node)
+
+    slanten = split_nodes_delimiter(bolden, '_', TextType.ITALIC)
+    print(f'\n3.')
+    for node in slanten:
+        print(node)
+
+    codin = split_nodes_delimiter(slanten, '`', TextType.CODE)
+    print(f'\n4.')
+    for node in codin:
+        print(node)
+
+    linkin = split_nodes_link(codin)
+    print(f'\n5.')
+    for node in linkin:
+        print(node)
+
+    imgin = split_nodes_image(linkin)
+    print(f'\n6.')
+    for node in imgin:
+        print(node)
+
+    return imgin
 
 def split_nodes_image(old_nodes):
     node_list = []
