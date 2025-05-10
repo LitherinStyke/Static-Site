@@ -26,30 +26,24 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
 
 def text_to_textnodes(text):
     new_node = TextNode(text, TextType.TEXT)
-    print(f'\n1. {new_node}\n')
 
     bolden = split_nodes_delimiter([new_node], '**', TextType.BOLD)
-    print(f'\n2.')
     for node in bolden:
         print(node)
 
     slanten = split_nodes_delimiter(bolden, '_', TextType.ITALIC)
-    print(f'\n3.')
     for node in slanten:
         print(node)
 
     codin = split_nodes_delimiter(slanten, '`', TextType.CODE)
-    print(f'\n4.')
     for node in codin:
         print(node)
 
     linkin = split_nodes_link(codin)
-    print(f'\n5.')
     for node in linkin:
         print(node)
 
     imgin = split_nodes_image(linkin)
-    print(f'\n6.')
     for node in imgin:
         print(node)
 
@@ -113,6 +107,20 @@ def split_nodes_link(old_nodes):
             node_list.append(TextNode(original_text, TextType.TEXT))
 
     return node_list
+
+def markdown_to_blocks(markdown):
+    blocks = markdown.split("\n\n")
+    
+    filtered_blocks = []
+
+    for block in blocks:
+        if block == "":
+            continue
+
+        block = block.strip()
+        filtered_blocks.append(block)
+
+    return filtered_blocks
     
 def extract_markdown_images(text):
     pattern = r"!\[([^\[\]]*)\]\(([^\(\)]*)\)"
