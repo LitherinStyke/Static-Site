@@ -22,32 +22,6 @@ class TextNode():
 
     def __repr__(self):
         return f"TextNode({self.text}, {self.text_type.value}, {self.url})"
-    
-def split_nodes_delimiter(old_nodes, delimiter, text_type):
-    nodes = []
-    for node in old_nodes:
-        if node.text_type != TextType.TEXT: 
-            nodes.append(node)
-            continue
-        
-        text_node = node.text.split(delimiter)
-
-        if len(text_node) % 2 == 0:
-            raise Exception(f"Entering or exiting delimiter for '{text_type.value}' not found\n---|{node}")
-
-        for i in range(len(text_node)):
-            if text_node[i] == "":
-                continue
-
-            if i % 2 == 0:
-                nodes.append(TextNode(text_node[i], TextType.TEXT))
-            else:
-                nodes.append(TextNode(text_node[i], text_type))
-
-    for node in nodes:
-        print(node)
-
-    return nodes
 
 def text_node_to_html_node(node:TextNode):
     new_leaf = None
@@ -75,4 +49,3 @@ def text_node_to_html_node(node:TextNode):
             raise Exception()
 
     return new_leaf
-    
