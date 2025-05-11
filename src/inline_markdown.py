@@ -1,6 +1,15 @@
 import re
+from enum import Enum
 from textnode import TextNode, TextType
-    
+
+class BlockType(Enum):
+    PARAGRAPH = 'paragraph'
+    HEADING = 'heading'
+    CODE = 'code'
+    QUOTE = 'quote'
+    UNORDERED_LIST = 'unordered_list'
+    ORDERED_LIST = 'ordered_list'
+
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     nodes = []
     for node in old_nodes:
@@ -28,24 +37,14 @@ def text_to_textnodes(text):
     new_node = TextNode(text, TextType.TEXT)
 
     bolden = split_nodes_delimiter([new_node], '**', TextType.BOLD)
-    for node in bolden:
-        print(node)
 
     slanten = split_nodes_delimiter(bolden, '_', TextType.ITALIC)
-    for node in slanten:
-        print(node)
 
     codin = split_nodes_delimiter(slanten, '`', TextType.CODE)
-    for node in codin:
-        print(node)
 
     linkin = split_nodes_link(codin)
-    for node in linkin:
-        print(node)
 
     imgin = split_nodes_image(linkin)
-    for node in imgin:
-        print(node)
 
     return imgin
 
@@ -108,9 +107,27 @@ def split_nodes_link(old_nodes):
 
     return node_list
 
+def block_to_block_type(markdown_block):
+    found_block = None
+
+    if match_markdown_header(markdown_block):
+        found_block = BlockType.HEADING
+    elif match_markdown_code(markdown_block):
+        found_block = BlockType.CODE
+    elif match_markdown_quote(markdown_block):
+        found_block = BlockType.QUOTE
+    elif match_markdown_ordered(markdown_block):
+        found_block = BlockType.ORDERED_LIST
+    elif match_markdown_unordered(markdown_block):
+        found_block = BlockType.UNORDERED_LIST
+    else:
+        found_block = BlockType.PARAGRAPH
+    
+    return found_block
+
 def markdown_to_blocks(markdown):
     blocks = markdown.split("\n\n")
-    
+
     filtered_blocks = []
 
     for block in blocks:
@@ -120,6 +137,7 @@ def markdown_to_blocks(markdown):
         block = block.strip()
         filtered_blocks.append(block)
 
+    print(filtered_blocks)
     return filtered_blocks
     
 def extract_markdown_images(text):
@@ -131,3 +149,35 @@ def extract_markdown_links(text):
     pattern = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
     matches = re.findall(pattern, text)
     return matches
+
+def match_markdown_header(text):
+    if '\n' in text: return False
+    pattern = r'^\#{1,6}\s'
+    matches = re.match(pattern, text)
+    return matches is not None
+
+def match_markdown_code(text):
+    pattern = r'^\`{3}.*\`{3}$'
+    matches = re.search(pattern, text, re.DOTALL)
+    return matches is not None
+
+def match_markdown_quote(text):
+    pattern = r'^\>\s'
+    lines = text.split('\n')
+    for quote in lines:
+        if not re.match(pattern, quote): return False
+    return True
+
+def match_markdown_unordered(text):
+    pattern = r'^\-\s'
+    lines = text.split('\n')
+    for quote in lines:
+        if not re.match(pattern, quote): return False
+    return True
+
+def match_markdown_ordered(text):
+    lines = text.split('\n')
+    for i, line in enumerate(lines, 1):
+        pattern = f'^{i}\\.\s'
+        if not re.match(pattern, line): return False
+    return True
