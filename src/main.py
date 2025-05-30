@@ -1,65 +1,37 @@
-from textnode import (
-    TextNode,           
-    TextType,
-    text_node_to_html_node,)
-
-from inline_markdown import ( 
-    split_nodes_delimiter, 
-    extract_markdown_images,
-    extract_markdown_links,
-    split_nodes_link,
-    split_nodes_image,
-    text_to_textnodes,
-    block_to_block_type,
-    markdown_to_blocks)
-
-from htmlnode import (
-    HTMLNode, 
-    LeafNode, 
-    ParentNode)
+from inline_markdown import (
+    markdown_to_html_node)
 
 
 
 def main():
-    print('hello world')
+    md = """
+### Big ol header
 
-    test = """
-# Header test
+There are _many things_ you **may** need to test with a markdown. Lets go list a few.
 
-## Header test2
-#test
-
-> quote 1
-> quote 2
-
-> quote 3
->quote 4
-
-- ordered 1
-- ordered 2
-
-- ordered 3
--ordered 4
-
-1. unordered 1
-2. unordered 2
-
-1. unordered 3
-4. unordered 4
-3. unordered 5
+1. an
+2. ordered
+3. list
 
 ```
-They holy code
-var var
-other var
+#some random ass code
+for i in range(5):
+    seed1_ticks += 1
+    print(f'Seed 1: {random.random()}, Ticks: {seed1_ticks}')
 ```
 
-tihoteioheshoifeohisef
+- an
+- unordered
+- list
+
+> sometimes **you** just gotta _quote that shit_
+> frfr. _I hate it here_
+
+Maybe with some time we may even be able to post pics with the **best girl**.
+![Best girl Meow Skulls](https://fortnite.gg/img/items/8333/bg.jpg?8)
+Heres a [link](https://fortnite.fandom.com/wiki/Meow_Skulls) to the wiki!
 """
-    text_test = markdown_to_blocks(test)
-
-    for block in text_test:
-        print(block)
-        print(f'{block_to_block_type(block)}\n')
+    full_html = markdown_to_html_node(md)
+    print(full_html.to_html())
 
 main()

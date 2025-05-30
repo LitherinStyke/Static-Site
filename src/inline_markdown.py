@@ -1,6 +1,15 @@
 import re
 from enum import Enum
-from textnode import TextNode, TextType
+from textnode import (
+    TextNode, 
+    TextType,
+    text_node_to_html_node)
+
+from htmlnode import (
+    LeafNode,
+    ParentNode,
+    HTMLNode)
+
 
 class BlockType(Enum):
     PARAGRAPH = 'paragraph'
@@ -12,11 +21,13 @@ class BlockType(Enum):
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     nodes = []
+
     for node in old_nodes:
         if node.text_type != TextType.TEXT: 
             nodes.append(node)
             continue
         
+        splitnodes = []
         text_node = node.text.split(delimiter)
 
         if len(text_node) % 2 == 0:
@@ -27,26 +38,27 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
                 continue
 
             if i % 2 == 0:
-                nodes.append(TextNode(text_node[i], TextType.TEXT))
+                splitnodes.append(TextNode(text_node[i], TextType.TEXT))
             else:
-                nodes.append(TextNode(text_node[i], text_type))
+                splitnodes.append(TextNode(text_node[i], text_type))
+
+        nodes.extend(splitnodes)
 
     return nodes
 
 def text_to_textnodes(text):
-    new_node = TextNode(text, TextType.TEXT)
+    nodes = [TextNode(text, TextType.TEXT)]
 
-    bolden = split_nodes_delimiter([new_node], '**', TextType.BOLD)
+    nodes = split_nodes_link(nodes)
 
-    slanten = split_nodes_delimiter(bolden, '_', TextType.ITALIC)
+    nodes = split_nodes_image(nodes)
 
-    codin = split_nodes_delimiter(slanten, '`', TextType.CODE)
+    nodes = split_nodes_delimiter(nodes, '`', TextType.CODE)
 
-    linkin = split_nodes_link(codin)
+    nodes = split_nodes_delimiter(nodes, '**', TextType.BOLD)
 
-    imgin = split_nodes_image(linkin)
-
-    return imgin
+    nodes = split_nodes_delimiter(nodes, '_', TextType.ITALIC)
+    return nodes
 
 def split_nodes_image(old_nodes):
     node_list = []
@@ -107,23 +119,83 @@ def split_nodes_link(old_nodes):
 
     return node_list
 
-def block_to_block_type(markdown_block):
-    found_block = None
+def markdown_to_html_node(markdown):
+    blocks = markdown_to_blocks(markdown)
 
-    if match_markdown_header(markdown_block):
-        found_block = BlockType.HEADING
-    elif match_markdown_code(markdown_block):
-        found_block = BlockType.CODE
-    elif match_markdown_quote(markdown_block):
-        found_block = BlockType.QUOTE
-    elif match_markdown_ordered(markdown_block):
-        found_block = BlockType.ORDERED_LIST
-    elif match_markdown_unordered(markdown_block):
-        found_block = BlockType.UNORDERED_LIST
+    # We need a main parent node for the whole markdown to contain the other parent nodes made from block_to_html
+
+    block_node_list = []
+    for block in blocks:
+        block_type = block_to_block_type(block)
+        html_block = block_to_html(block, block_type)
+        block_node_list.append(html_block)
+
+    mega_parent:ParentNode = ParentNode('div', block_node_list)
+    return mega_parent
+
+def block_to_html(block, block_type):
+    # Turn this shit into HTML nodes. Leaf and Parent
+    text_nodes = text_to_textnodes(block)
+
+    hash_count = 0
+    if block_type == BlockType.HEADING:
+        hash_count = len(block.split(' ', 1)[0])
+
+    block_tag = html_block_tags(block_type, hash_count)
+
+    parent_block:ParentNode = None
+
+    if block_type == BlockType.CODE:
+        child_block = LeafNode(block_tag, block)
+        parent_block = ParentNode('pre', [child_block])
     else:
-        found_block = BlockType.PARAGRAPH
+        parent_block = get_childeren_of_markdown_block(block, block_tag)
+
+    #if parent_block is not None: print(parent_block.to_html())
+    return parent_block
+
+def get_childeren_of_markdown_block(md_block, tag):
+    leaf_nodes = []
+    text_nodes = text_to_textnodes(md_block)
+    for node in text_nodes:
+        html_node = text_node_to_html_node(node)
+        leaf_nodes.append(html_node)
+
+    return ParentNode(tag, leaf_nodes)
+        
+
+
+
+def block_to_block_type(markdown_block):
+    lines = markdown_block.split('\n')
+
+    if markdown_block.startswith(("# ", "## ", "### ", "#### ", "##### ", "###### ")):
+        return BlockType.HEADING
     
-    return found_block
+    if len(lines) > 1 and lines[0].startswith("```") and lines[-1].startswith("```"):
+        return BlockType.CODE
+    
+    if markdown_block.startswith(">"):
+        for line in lines:
+            if not line.startswith(">"):
+                return BlockType.PARAGRAPH
+        return BlockType.QUOTE
+    
+    if markdown_block.startswith("- "):
+        for line in lines:
+            if not line.startswith("- "):
+                return BlockType.PARAGRAPH
+        return BlockType.UNORDERED_LIST
+    
+    if markdown_block.startswith("1. "):
+        i = 1
+        for line in lines:
+            if not line.startswith(f"{i}. "):
+                return BlockType.PARAGRAPH
+            i += 1
+        return BlockType.ORDERED_LIST
+    
+    return BlockType.PARAGRAPH
 
 def markdown_to_blocks(markdown):
     blocks = markdown.split("\n\n")
@@ -137,7 +209,6 @@ def markdown_to_blocks(markdown):
         block = block.strip()
         filtered_blocks.append(block)
 
-    print(filtered_blocks)
     return filtered_blocks
     
 def extract_markdown_images(text):
@@ -149,35 +220,30 @@ def extract_markdown_links(text):
     pattern = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
     matches = re.findall(pattern, text)
     return matches
+    
+def html_block_tags(block_type, hash_count=0):
+    tags = ''
 
-def match_markdown_header(text):
-    if '\n' in text: return False
-    pattern = r'^\#{1,6}\s'
-    matches = re.match(pattern, text)
-    return matches is not None
+    match block_type:
+        case BlockType.HEADING:
+            tags = f'h{hash_count}'
 
-def match_markdown_code(text):
-    pattern = r'^\`{3}.*\`{3}$'
-    matches = re.search(pattern, text, re.DOTALL)
-    return matches is not None
+        case BlockType.PARAGRAPH:
+            tags = 'p'
 
-def match_markdown_quote(text):
-    pattern = r'^\>\s'
-    lines = text.split('\n')
-    for quote in lines:
-        if not re.match(pattern, quote): return False
-    return True
+        case BlockType.CODE:
+            tags = 'code'
 
-def match_markdown_unordered(text):
-    pattern = r'^\-\s'
-    lines = text.split('\n')
-    for quote in lines:
-        if not re.match(pattern, quote): return False
-    return True
+        case BlockType.QUOTE:
+            tags = 'blockquote'
 
-def match_markdown_ordered(text):
-    lines = text.split('\n')
-    for i, line in enumerate(lines, 1):
-        pattern = f'^{i}\\.\s'
-        if not re.match(pattern, line): return False
-    return True
+        case BlockType.ORDERED_LIST:
+            tags = 'ol'
+
+        case BlockType.UNORDERED_LIST:
+            tags = 'ul'
+
+        case _:
+            raise ValueError(f'{block_type} is not a valid BlockType or is not supported')
+    
+    return tags
